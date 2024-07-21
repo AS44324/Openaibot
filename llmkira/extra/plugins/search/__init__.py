@@ -80,6 +80,56 @@ class SearchTool(BaseTool):
                 return self.function
         return None
 
+    async def failed(
+        self,
+        task: "TaskHeader",
+        receiver: "Location",
+        exception,
+        env: dict,
+        arg: dict,
+        pending_task: "ToolCall",
+        refer_llm_result: dict = None,
+        **kwargs,
+    ):
+        meta = task.task_sign.reply(
+            plugin_name=__plugin_name__,
+            tool_response=[
+                ToolResponse(
+                    name=__plugin_name__,
+                    function_response=f"Run Failed {exception}",
+                    tool_call_id=pending_task.id,
+                    tool_call=pending_task,
+                )
+            ],
+        )
+        await Task.create_and_send(
+            queue_name=receiver.platform,
+            task=TaskHeader(
+                sender=task.sender,
+                receiver=receiver,
+                task_sign=meta,
+                message=[
+                    EventMessage(
+                        user_id=receiver.user_id,
+                        chat_id=receiver.chat_id,
+                        text=f"🍖{__plugin_name__} Run Failed：{exception},report it to user.",
+                    )
+                ],
+            ),
+        )
+
+    async def callback(
+        self,
+        task: "TaskHeader",
+        receiver: "Location",
+        env: dict,
+        arg: dict,
+        pending_task: "ToolCall",
+        refer_llm_result: dict = None,
+        **kwargs,
+    ):
+        return True
+
     async def run(
         self,
         task: "TaskHeader",
