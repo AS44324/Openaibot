@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 from typing import Union, Type, List
-
+import os
 from pydantic import ConfigDict
+from dotenv import load_dotenv
+
+load_dotenv()  # 载入 .env 文件
 
 __package__name__ = "llmkira.extra.plugins.search"
 __plugin_name__ = "search_in_google"
@@ -28,7 +31,9 @@ class Search(BaseModel):
 @resign_plugin_executor(tool=Search)
 async def search_on_serper(search_sentence: str, api_key: str = None):
     if not api_key:
-        return search_in_duckduckgo(search_sentence)
+        api_key = os.getenv("SERPER_API_KEY")  # 从 .env 文件中获取 API key
+        if not api_key:
+            return search_in_duckduckgo(search_sentence)
     result = await SerperSearchEngine(api_key=api_key).search(search_sentence)
     return build_search_tips(search_items=result)
 
